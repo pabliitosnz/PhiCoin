@@ -16,7 +16,7 @@ app.use(session({
 const DATA_FILE = "./data.json";
 
 /* ======================
-   DATA
+   DB
 ====================== */
 
 function loadData() {
@@ -73,7 +73,7 @@ app.post("/login", (req, res) => {
 
   req.session.user = username;
 
-  res.json({ ok: true, username });
+  res.json({ ok: true });
 });
 
 /* ======================
@@ -81,12 +81,13 @@ app.post("/login", (req, res) => {
 ====================== */
 
 app.post("/logout", (req, res) => {
-  req.session.destroy();
-  res.json({ ok: true });
+  req.session.destroy(() => {
+    res.json({ ok: true });
+  });
 });
 
 /* ======================
-   ME (usuario actual)
+   ME
 ====================== */
 
 app.get("/me", (req, res) => {
@@ -137,47 +138,16 @@ app.post("/send", (req, res) => {
   res.json({ ok: true });
 });
 
-function isAdmin(req) {
-  return req.session.user === "pablo";
-}
-
-function showAdmin(user) {
-  if (user === "pablo") {
-    document.getElementById("adminBox").style.display = "block";
-  }
-}
-
-app.post("/admin/add", (req, res) => {
-  const data = loadData();
-
-  if (!req.session.user || !isAdmin(req))
-    return res.json({ error: "not allowed" });
-
-  const { username, amount } = req.body;
-
-  const user = data.users.find(u => u.username === username);
-
-  if (!user) return res.json({ error: "user not found" });
-
-  user.balance += Number(amount);
-
-  saveData(data);
-
-  res.json({ ok: true });
-});
-
 /* ======================
    USERS + HISTORY
 ====================== */
 
 app.get("/users", (req, res) => {
-  const data = loadData();
-  res.json(data.users);
+  res.json(loadData().users);
 });
 
 app.get("/history", (req, res) => {
-  const data = loadData();
-  res.json(data.transactions);
+  res.json(loadData().transactions);
 });
 
 /* ======================
@@ -187,5 +157,5 @@ app.get("/history", (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("🔥 PhiCoin bank running");
+  console.log("🔥 PhiCoin running");
 });

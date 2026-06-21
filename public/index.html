@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PhiCoin Bank</title>
+  <title>PhiCoin</title>
   <style>
     body { font-family: Arial; max-width: 600px; margin: auto; }
     input, button { margin: 5px 0; padding: 10px; width: 100%; }
@@ -23,37 +23,37 @@
   <button onclick="logout()">Logout</button>
 </div>
 
-<h1>🔥 PhiCoin Bank</h1>
+<h1>🔥 PhiCoin</h1>
 
 <!-- REGISTER -->
-<div class="box">
-  <h3>Register</h3>
-  <input id="regUser" placeholder="username">
-  <input id="regPass" placeholder="password">
-  <button onclick="register()">Create account</button>
+<div id="authBox">
+
+  <div class="box">
+    <h3>Register</h3>
+    <input id="regUser" placeholder="username">
+    <input id="regPass" placeholder="password">
+    <button onclick="register()">Create account</button>
+  </div>
+
+  <div class="box">
+    <h3>Login</h3>
+    <input id="logUser" placeholder="username">
+    <input id="logPass" placeholder="password">
+    <button onclick="login()">Login</button>
+  </div>
+
 </div>
 
-<!-- LOGIN -->
-<div class="box">
-  <h3>Login</h3>
-  <input id="logUser" placeholder="username">
-  <input id="logPass" placeholder="password">
-  <button onclick="login()">Login</button>
-</div>
+<!-- APP -->
+<div id="appBox" style="display:none;">
 
-<!-- SEND MONEY -->
-<div class="box">
-  <h3>Send money</h3>
-  <input id="to" placeholder="to user">
-  <input id="amount" placeholder="amount">
-  <button onclick="send()">Send</button>
-</div>
+  <div class="box">
+    <h3>Send money</h3>
+    <input id="to" placeholder="to user">
+    <input id="amount" placeholder="amount">
+    <button onclick="send()">Send</button>
+  </div>
 
-<div class="box" id="adminBox" style="display:none;">
-  <h3>Admin panel</h3>
-  <input id="adminUser" placeholder="user">
-  <input id="adminAmount" placeholder="amount">
-  <button onclick="giveMoney()">Give money</button>
 </div>
 
 <script>
@@ -87,7 +87,7 @@ async function login() {
     return;
   }
 
-  loadMe();
+  await loadMe();
 }
 
 async function loadMe() {
@@ -99,6 +99,9 @@ async function loadMe() {
   document.getElementById("topbar").style.display = "flex";
   document.getElementById("userInfo").innerText =
     data.username + " | 💰 " + data.balance;
+
+  document.getElementById("authBox").style.display = "none";
+  document.getElementById("appBox").style.display = "block";
 }
 
 async function logout() {
@@ -117,33 +120,6 @@ async function send() {
   });
 
   alert("Sent");
-  loadMe();
-}
-
-async function loadMe() {
-  const res = await fetch('/me');
-  const data = await res.json();
-
-  if (!data.logged) return;
-
-  document.getElementById("topbar").style.display = "flex";
-  document.getElementById("userInfo").innerText =
-    data.username + " | 💰 " + data.balance;
-
-  showAdmin(data.username);
-}
-
-async function giveMoney() {
-  await fetch('/admin/add', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      username: adminUser.value,
-      amount: Number(adminAmount.value)
-    })
-  });
-
-  alert("Money added");
   loadMe();
 }
 
