@@ -55,29 +55,6 @@ async function register() {
   alert("User created");
 }
 
-async function send() {
-  await fetch('/send', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      from: from.value,
-      to: to.value,
-      amount: Number(amount.value)
-    })
-  });
-  alert("Sent");
-}
-
-async function loadUsers() {
-  const res = await fetch('/users');
-  users.innerText = JSON.stringify(await res.json(), null, 2);
-}
-
-async function loadHistory() {
-  const res = await fetch('/history');
-  history.innerText = JSON.stringify(await res.json(), null, 2);
-}
-
 async function login() {
   const res = await fetch('/login', {
     method: 'POST',
@@ -102,6 +79,29 @@ async function loadMe() {
   const res = await fetch('/me');
   const data = await res.json();
   alert("Balance: " + data.balance);
+}
+
+async function send() {
+  await fetch('/send', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      from: from.value,
+      to: to.value,
+      amount: Number(amount.value)
+    })
+  });
+  alert("Sent");
+}
+
+async function loadUsers() {
+  const res = await fetch('/users');
+  users.innerText = JSON.stringify(await res.json(), null, 2);
+}
+
+async function loadHistory() {
+  const res = await fetch('/history');
+  history.innerText = JSON.stringify(await res.json(), null, 2);
 }
 
 </script>
