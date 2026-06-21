@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PhiCoin</title>
+  <style>
+    body { font-family: Arial; max-width: 600px; margin: auto; }
+    .box { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+    input, button { padding: 8px; margin: 5px; }
+  </style>
+</head>
+<body>
+
+<h1>PhiCoin 💸</h1>
+
+<div class="box">
+  <h2>Registro</h2>
+  <input id="regUser" placeholder="Usuario">
+  <input id="regPass" type="password" placeholder="Contraseña">
+  <button onclick="register()">Registrarse</button>
+</div>
+
+<div class="box">
+  <h2>Login</h2>
+  <input id="logUser" placeholder="Usuario">
+  <input id="logPass" type="password" placeholder="Contraseña">
+  <button onclick="login()">Entrar</button>
+</div>
+
+<div class="box">
+  <h2>Panel</h2>
+  <p id="balance">Saldo: -</p>
+  <button onclick="refresh()">Actualizar saldo</button>
+</div>
+
+<div class="box">
+  <h2>Enviar</h2>
+  <input id="toUser" placeholder="Destino">
+  <input id="amount" placeholder="Cantidad">
+  <button onclick="send()">Enviar</button>
+</div>
+
+<div class="box">
+  <h2>Historial</h2>
+  <button onclick="loadHistory()">Ver historial</button>
+  <ul id="history"></ul>
+</div>
+
+<script>
+let currentUser = "";
+
+function register() {
+  fetch("/register", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      username: regUser.value,
+      password: regPass.value
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) alert(d.error);
+    else alert("Usuario creado");
+  });
+}
+
+function login() {
+  currentUser = logUser.value;
+
+  fetch("/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      username: logUser.value,
+      password: logPass.value
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) alert(d.error);
+    else balance.innerText = "Saldo: " + d.balance;
+  });
+}
+
+function refresh() {
+  fetch("/balance/" + currentUser)
+  .then(r => r.json())
+  .then(d => balance.innerText = "Saldo: " + d.balance);
+}
+
+function send() {
+  fetch("/send", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      from: currentUser,
+      to: toUser.value,
+      amount: parseFloat(amount.value)
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) alert(d.error);
+    else {
+      alert("Enviado");
+      refresh();
+    }
+  });
+}
+
+function loadHistory() {
+  fetch("/history")
+  .then(r => r.json())
+  .then(data => {
+    const list = document.getElementById("history");
+    list.innerHTML = "";
+
+    data.forEach(tx => {
+      const li = document.createElement("li");
+      li.textContent = `${tx.fromUser} → ${tx.toUser} : ${tx.amount}`;
+      list.appendChild(li);
+    });
+  });
+}
+
+</script>
+
+</body>
+</html>
