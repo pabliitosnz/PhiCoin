@@ -9,7 +9,7 @@ app.use(express.static("public"));
 const DATA_FILE = "./data.json";
 
 /* ======================
-   DATA HELPERS
+   HELPERS
 ====================== */
 
 function loadData() {
@@ -34,7 +34,7 @@ app.get("/", (req, res) => {
 });
 
 /* ======================
-   REGISTER (TODOS 0€)
+   REGISTER
 ====================== */
 
 app.post("/register", (req, res) => {
@@ -110,26 +110,7 @@ app.get("/history", (req, res) => {
 });
 
 /* ======================
-   ADMIN: GIVE MONEY
-====================== */
-
-app.post("/admin/add", (req, res) => {
-  const data = loadData();
-  const { username, amount } = req.body;
-
-  const user = data.users.find(u => u.username === username);
-
-  if (!user) return res.json({ error: "user not found" });
-
-  user.balance += Number(amount);
-
-  saveData(data);
-
-  res.json({ ok: true, balance: user.balance });
-});
-
-/* ======================
-   START SERVER
+   START
 ====================== */
 
 const PORT = process.env.PORT || 3000;

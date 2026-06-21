@@ -27,13 +27,6 @@
 </div>
 
 <div class="box">
-  <h3>Admin panel</h3>
-  <input id="adminUser" placeholder="user">
-  <input id="adminAmount" placeholder="amount">
-  <button onclick="addMoney()">Give money</button>
-</div>
-
-<div class="box">
   <h3>Users</h3>
   <button onclick="loadUsers()">Load users</button>
   <pre id="users"></pre>
@@ -66,18 +59,6 @@ async function send() {
     })
   });
   alert("Sent");
-}
-
-async function addMoney() {
-  await fetch('/admin/add', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      username: adminUser.value,
-      amount: Number(adminAmount.value)
-    })
-  });
-  alert("Money added");
 }
 
 async function loadUsers() {
