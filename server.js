@@ -3,20 +3,20 @@ const fs = require("fs");
 
 const app = express();
 app.use(express.json());
+app.use(express.static("public"));
 
 const DATA_FILE = "./data.json";
 
 /* ======================
-   UTILIDADES
+   DB HELPERS
 ====================== */
 
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) {
-    const initial = { users: [], transactions: [] };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2));
-    return initial;
+    const init = { users: [], transactions: [] };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(init, null, 2));
+    return init;
   }
-
   return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
 }
 
@@ -25,7 +25,15 @@ function saveData(data) {
 }
 
 /* ======================
-   REGISTRO USUARIO
+   FRONTEND ROUTE
+====================== */
+
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");
+});
+
+/* ======================
+   REGISTER USER
 ====================== */
 
 app.post("/register", (req, res) => {
@@ -34,8 +42,9 @@ app.post("/register", (req, res) => {
 
   if (!username) return res.json({ error: "no username" });
 
-  const exists = data.users.find(u => u.username === username);
-  if (exists) return res.json({ error: "user exists" });
+  if (data.users.find(u => u.username === username)) {
+    return res.json({ error: "user exists" });
+  }
 
   data.users.push({
     username,
@@ -48,7 +57,7 @@ app.post("/register", (req, res) => {
 });
 
 /* ======================
-   ENVIAR DINERO
+   SEND MONEY
 ====================== */
 
 app.post("/send", (req, res) => {
@@ -82,16 +91,7 @@ app.post("/send", (req, res) => {
 });
 
 /* ======================
-   HISTORIAL
-====================== */
-
-app.get("/history", (req, res) => {
-  const data = loadData();
-  res.json(data.transactions);
-});
-
-/* ======================
-   USUARIOS
+   USERS
 ====================== */
 
 app.get("/users", (req, res) => {
@@ -100,15 +100,20 @@ app.get("/users", (req, res) => {
 });
 
 /* ======================
-   SERVIDOR
+   HISTORY
+====================== */
+
+app.get("/history", (req, res) => {
+  const data = loadData();
+  res.json(data.transactions);
+});
+
+/* ======================
+   START SERVER
 ====================== */
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log("🔥 PhiCoin running on port " + PORT);
-});
-
-app.get("/", (req, res) => {
-  res.send("🔥 PhiCoin está funcionando en Render");
 });

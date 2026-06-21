@@ -4,125 +4,72 @@
   <title>PhiCoin</title>
   <style>
     body { font-family: Arial; max-width: 600px; margin: auto; }
-    .box { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
-    input, button { padding: 8px; margin: 5px; }
+    input, button { margin: 5px 0; padding: 10px; width: 100%; }
+    .box { border: 1px solid #ddd; padding: 10px; margin-top: 10px; }
   </style>
 </head>
 <body>
 
-<h1>PhiCoin 💸</h1>
+<h1>🔥 PhiCoin</h1>
 
 <div class="box">
-  <h2>Registro</h2>
-  <input id="regUser" placeholder="Usuario">
-  <input id="regPass" type="password" placeholder="Contraseña">
-  <button onclick="register()">Registrarse</button>
+  <h3>Register</h3>
+  <input id="regUser" placeholder="username">
+  <button onclick="register()">Create user</button>
 </div>
 
 <div class="box">
-  <h2>Login</h2>
-  <input id="logUser" placeholder="Usuario">
-  <input id="logPass" type="password" placeholder="Contraseña">
-  <button onclick="login()">Entrar</button>
+  <h3>Send money</h3>
+  <input id="from" placeholder="from">
+  <input id="to" placeholder="to">
+  <input id="amount" placeholder="amount">
+  <button onclick="send()">Send</button>
 </div>
 
 <div class="box">
-  <h2>Panel</h2>
-  <p id="balance">Saldo: -</p>
-  <button onclick="refresh()">Actualizar saldo</button>
+  <h3>Users</h3>
+  <button onclick="loadUsers()">Load users</button>
+  <pre id="users"></pre>
 </div>
 
 <div class="box">
-  <h2>Enviar</h2>
-  <input id="toUser" placeholder="Destino">
-  <input id="amount" placeholder="Cantidad">
-  <button onclick="send()">Enviar</button>
-</div>
-
-<div class="box">
-  <h2>Historial</h2>
-  <button onclick="loadHistory()">Ver historial</button>
-  <ul id="history"></ul>
+  <h3>History</h3>
+  <button onclick="loadHistory()">Load history</button>
+  <pre id="history"></pre>
 </div>
 
 <script>
-let currentUser = "";
+async function register() {
+  await fetch('/register', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username: regUser.value })
+  });
+  alert("User created");
+}
 
-function register() {
-  fetch("/register", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
+async function send() {
+  await fetch('/send', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      username: regUser.value,
-      password: regPass.value
+      from: from.value,
+      to: to.value,
+      amount: Number(amount.value)
     })
-  })
-  .then(r => r.json())
-  .then(d => {
-    if (d.error) alert(d.error);
-    else alert("Usuario creado");
   });
+  alert("Sent");
 }
 
-function login() {
-  currentUser = logUser.value;
-
-  fetch("/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      username: logUser.value,
-      password: logPass.value
-    })
-  })
-  .then(r => r.json())
-  .then(d => {
-    if (d.error) alert(d.error);
-    else balance.innerText = "Saldo: " + d.balance;
-  });
+async function loadUsers() {
+  const res = await fetch('/users');
+  users.innerText = JSON.stringify(await res.json(), null, 2);
 }
 
-function refresh() {
-  fetch("/balance/" + currentUser)
-  .then(r => r.json())
-  .then(d => balance.innerText = "Saldo: " + d.balance);
+async function loadHistory() {
+  const res = await fetch('/history');
+  history.innerText = JSON.stringify(await res.json(), null, 2);
 }
-
-function send() {
-  fetch("/send", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      from: currentUser,
-      to: toUser.value,
-      amount: parseFloat(amount.value)
-    })
-  })
-  .then(r => r.json())
-  .then(d => {
-    if (d.error) alert(d.error);
-    else {
-      alert("Enviado");
-      refresh();
-    }
-  });
-}
-
-function loadHistory() {
-  fetch("/history")
-  .then(r => r.json())
-  .then(data => {
-    const list = document.getElementById("history");
-    list.innerHTML = "";
-
-    data.forEach(tx => {
-      const li = document.createElement("li");
-      li.textContent = `${tx.fromUser} → ${tx.toUser} : ${tx.amount}`;
-      list.appendChild(li);
-    });
-  });
-}
-
 </script>
 
 </body>
