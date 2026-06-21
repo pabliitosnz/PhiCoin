@@ -1,43 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PhiCoin</title>
+  <title>PhiCoin Bank</title>
   <style>
     body { font-family: Arial; max-width: 600px; margin: auto; }
     input, button { margin: 5px 0; padding: 10px; width: 100%; }
     .box { border: 1px solid #ddd; padding: 10px; margin-top: 10px; }
+
+    #topbar {
+      display: none;
+      justify-content: space-between;
+      background: #111;
+      color: white;
+      padding: 10px;
+    }
   </style>
 </head>
 <body>
 
-<h1>🔥 PhiCoin</h1>
+<div id="topbar">
+  <div id="userInfo"></div>
+  <button onclick="logout()">Logout</button>
+</div>
 
+<h1>🔥 PhiCoin Bank</h1>
+
+<!-- REGISTER -->
 <div class="box">
   <h3>Register</h3>
   <input id="regUser" placeholder="username">
-  <button onclick="register()">Create user</button>
+  <input id="regPass" placeholder="password">
+  <button onclick="register()">Create account</button>
 </div>
 
-<div class="box">
-  <h3>Send money</h3>
-  <input id="from" placeholder="from">
-  <input id="to" placeholder="to">
-  <input id="amount" placeholder="amount">
-  <button onclick="send()">Send</button>
-</div>
-
-<div class="box">
-  <h3>Users</h3>
-  <button onclick="loadUsers()">Load users</button>
-  <pre id="users"></pre>
-</div>
-
-<div class="box">
-  <h3>History</h3>
-  <button onclick="loadHistory()">Load history</button>
-  <pre id="history"></pre>
-</div>
-
+<!-- LOGIN -->
 <div class="box">
   <h3>Login</h3>
   <input id="logUser" placeholder="username">
@@ -45,14 +41,33 @@
   <button onclick="login()">Login</button>
 </div>
 
+<!-- SEND MONEY -->
+<div class="box">
+  <h3>Send money</h3>
+  <input id="to" placeholder="to user">
+  <input id="amount" placeholder="amount">
+  <button onclick="send()">Send</button>
+</div>
+
+<div class="box" id="adminBox" style="display:none;">
+  <h3>Admin panel</h3>
+  <input id="adminUser" placeholder="user">
+  <input id="adminAmount" placeholder="amount">
+  <button onclick="giveMoney()">Give money</button>
+</div>
+
 <script>
 async function register() {
   await fetch('/register', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ username: regUser.value })
+    body: JSON.stringify({
+      username: regUser.value,
+      password: regPass.value
+    })
   });
-  alert("User created");
+
+  alert("Account created");
 }
 
 async function login() {
@@ -69,16 +84,26 @@ async function login() {
 
   if (data.error) {
     alert("Login failed");
-  } else {
-    alert("Logged in as " + data.username);
-    loadMe();
+    return;
   }
+
+  loadMe();
 }
 
 async function loadMe() {
   const res = await fetch('/me');
   const data = await res.json();
-  alert("Balance: " + data.balance);
+
+  if (!data.logged) return;
+
+  document.getElementById("topbar").style.display = "flex";
+  document.getElementById("userInfo").innerText =
+    data.username + " | 💰 " + data.balance;
+}
+
+async function logout() {
+  await fetch('/logout', { method: 'POST' });
+  location.reload();
 }
 
 async function send() {
@@ -86,24 +111,43 @@ async function send() {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      from: from.value,
       to: to.value,
       amount: Number(amount.value)
     })
   });
+
   alert("Sent");
+  loadMe();
 }
 
-async function loadUsers() {
-  const res = await fetch('/users');
-  users.innerText = JSON.stringify(await res.json(), null, 2);
+async function loadMe() {
+  const res = await fetch('/me');
+  const data = await res.json();
+
+  if (!data.logged) return;
+
+  document.getElementById("topbar").style.display = "flex";
+  document.getElementById("userInfo").innerText =
+    data.username + " | 💰 " + data.balance;
+
+  showAdmin(data.username);
 }
 
-async function loadHistory() {
-  const res = await fetch('/history');
-  history.innerText = JSON.stringify(await res.json(), null, 2);
+async function giveMoney() {
+  await fetch('/admin/add', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      username: adminUser.value,
+      amount: Number(adminAmount.value)
+    })
+  });
+
+  alert("Money added");
+  loadMe();
 }
 
+loadMe();
 </script>
 
 </body>

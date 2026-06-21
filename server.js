@@ -1,21 +1,22 @@
-const session = require("express-session");
 const express = require("express");
 const fs = require("fs");
+const session = require("express-session");
 
 const app = express();
 
 app.use(express.json());
+app.use(express.static("public"));
+
 app.use(session({
-  secret: "phicoin-secret-key",
+  secret: "phicoin-secret",
   resave: false,
   saveUninitialized: true
 }));
-app.use(express.static("public"));
 
 const DATA_FILE = "./data.json";
 
 /* ======================
-   HELPERS
+   DATA
 ====================== */
 
 function loadData() {
@@ -32,98 +33,8 @@ function saveData(data) {
 }
 
 /* ======================
-   FRONT PAGE
-====================== */
-
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");
-});
-
-/* ======================
    REGISTER
 ====================== */
-
-app.post("/register", (req, res) => {
-  const data = loadData();
-  const { username } = req.body;
-
-  if (!username) return res.json({ error: "no username" });
-
-  if (data.users.find(u => u.username === username)) {
-    return res.json({ error: "user exists" });
-  }
-
-  data.users.push({
-    username,
-    balance: 0
-  });
-
-  saveData(data);
-
-  res.json({ ok: true });
-});
-
-/* ======================
-   SEND MONEY
-====================== */
-
-app.post("/send", (req, res) => {
-  const data = loadData();
-  const { from, to, amount } = req.body;
-
-  const sender = data.users.find(u => u.username === from);
-  const receiver = data.users.find(u => u.username === to);
-
-  if (!sender || !receiver) {
-    return res.json({ error: "user not found" });
-  }
-
-  if (sender.balance < amount) {
-    return res.json({ error: "not enough balance" });
-  }
-
-  sender.balance -= amount;
-  receiver.balance += amount;
-
-  data.transactions.push({
-    from,
-    to,
-    amount,
-    date: new Date().toISOString()
-  });
-
-  saveData(data);
-
-  res.json({ ok: true });
-});
-
-/* ======================
-   USERS
-====================== */
-
-app.get("/users", (req, res) => {
-  const data = loadData();
-  res.json(data.users);
-});
-
-/* ======================
-   HISTORY
-====================== */
-
-app.get("/history", (req, res) => {
-  const data = loadData();
-  res.json(data.transactions);
-});
-
-/* ======================
-   START
-====================== */
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("🔥 PhiCoin running on port " + PORT);
-});
 
 app.post("/register", (req, res) => {
   const data = loadData();
@@ -146,6 +57,10 @@ app.post("/register", (req, res) => {
   res.json({ ok: true });
 });
 
+/* ======================
+   LOGIN
+====================== */
+
 app.post("/login", (req, res) => {
   const data = loadData();
   const { username, password } = req.body;
@@ -161,16 +76,37 @@ app.post("/login", (req, res) => {
   res.json({ ok: true, username });
 });
 
+/* ======================
+   LOGOUT
+====================== */
+
+app.post("/logout", (req, res) => {
+  req.session.destroy();
+  res.json({ ok: true });
+});
+
+/* ======================
+   ME (usuario actual)
+====================== */
+
 app.get("/me", (req, res) => {
   const data = loadData();
 
   if (!req.session.user)
-    return res.json({ error: "not logged in" });
+    return res.json({ logged: false });
 
   const user = data.users.find(u => u.username === req.session.user);
 
-  res.json(user);
+  res.json({
+    logged: true,
+    username: user.username,
+    balance: user.balance
+  });
 });
+
+/* ======================
+   SEND MONEY
+====================== */
 
 app.post("/send", (req, res) => {
   const data = loadData();
@@ -199,4 +135,57 @@ app.post("/send", (req, res) => {
   saveData(data);
 
   res.json({ ok: true });
+});
+
+function isAdmin(req) {
+  return req.session.user === "pablo";
+}
+
+function showAdmin(user) {
+  if (user === "pablo") {
+    document.getElementById("adminBox").style.display = "block";
+  }
+}
+
+app.post("/admin/add", (req, res) => {
+  const data = loadData();
+
+  if (!req.session.user || !isAdmin(req))
+    return res.json({ error: "not allowed" });
+
+  const { username, amount } = req.body;
+
+  const user = data.users.find(u => u.username === username);
+
+  if (!user) return res.json({ error: "user not found" });
+
+  user.balance += Number(amount);
+
+  saveData(data);
+
+  res.json({ ok: true });
+});
+
+/* ======================
+   USERS + HISTORY
+====================== */
+
+app.get("/users", (req, res) => {
+  const data = loadData();
+  res.json(data.users);
+});
+
+app.get("/history", (req, res) => {
+  const data = loadData();
+  res.json(data.transactions);
+});
+
+/* ======================
+   START
+====================== */
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("🔥 PhiCoin bank running");
 });
