@@ -38,6 +38,13 @@
   <pre id="history"></pre>
 </div>
 
+<div class="box">
+  <h3>Login</h3>
+  <input id="logUser" placeholder="username">
+  <input id="logPass" placeholder="password">
+  <button onclick="login()">Login</button>
+</div>
+
 <script>
 async function register() {
   await fetch('/register', {
@@ -70,6 +77,33 @@ async function loadHistory() {
   const res = await fetch('/history');
   history.innerText = JSON.stringify(await res.json(), null, 2);
 }
+
+async function login() {
+  const res = await fetch('/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      username: logUser.value,
+      password: logPass.value
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.error) {
+    alert("Login failed");
+  } else {
+    alert("Logged in as " + data.username);
+    loadMe();
+  }
+}
+
+async function loadMe() {
+  const res = await fetch('/me');
+  const data = await res.json();
+  alert("Balance: " + data.balance);
+}
+
 </script>
 
 </body>
