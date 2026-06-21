@@ -159,3 +159,18 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("🔥 PhiCoin running");
 });
+
+app.get("/me/give200", (req, res) => {
+  const data = loadData();
+
+  // 👇 cambia "pablo" por tu usuario real
+  const user = data.users.find(u => u.username === "pablo");
+
+  if (!user) return res.send("user not found");
+
+  user.balance += 200;
+
+  saveData(data);
+
+  res.send("💸 +200 added");
+});
