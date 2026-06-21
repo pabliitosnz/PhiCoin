@@ -1,14 +1,14 @@
 console.log("🔥 ESTE ES EL SERVER QUE SE ESTÁ EJECUTANDO");
 const express = require("express");
 console.log("🔥 SERVER ACTIVO: estoy ejecutando ESTE archivo");
-const sqlite3 = require("sqlite3").verbose();
+const Database = require("better-sqlite3");
 const bcrypt = require("bcrypt");
 
 const app = express();
 app.use(express.json());
 app.use(express.static("public"));
 
-const db = new sqlite3.Database("phicoin.db");
+const db = new Database("phicoin.db");
 
 console.log("🔥 PhiCoin server activo");
 
