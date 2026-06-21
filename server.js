@@ -1,141 +1,110 @@
-console.log("🔥 ESTE ES EL SERVER QUE SE ESTÁ EJECUTANDO");
 const express = require("express");
-console.log("🔥 SERVER ACTIVO: estoy ejecutando ESTE archivo");
-const Database = require("better-sqlite3");
-const bcrypt = require("bcrypt");
+const fs = require("fs");
 
 const app = express();
 app.use(express.json());
-app.use(express.static("public"));
 
-const db = new Database("phicoin.db");
+const DATA_FILE = "./data.json";
 
-console.log("🔥 PhiCoin server activo");
+/* ======================
+   UTILIDADES
+====================== */
 
-// ---------------- TABLAS ----------------
+function loadData() {
+  if (!fs.existsSync(DATA_FILE)) {
+    const initial = { users: [], transactions: [] };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2));
+    return initial;
+  }
 
-db.run(`
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT UNIQUE,
-  password TEXT,
-  balance REAL DEFAULT 0
-)
-`);
+  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+}
 
-db.run(`
-CREATE TABLE IF NOT EXISTS transactions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  fromUser TEXT,
-  toUser TEXT,
-  amount REAL,
-  date TEXT
-)
-`);
+function saveData(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
 
-// ---------------- TEST ----------------
+/* ======================
+   REGISTRO USUARIO
+====================== */
 
-app.get("/test", (req, res) => {
+app.post("/register", (req, res) => {
+  const data = loadData();
+  const { username } = req.body;
+
+  if (!username) return res.json({ error: "no username" });
+
+  const exists = data.users.find(u => u.username === username);
+  if (exists) return res.json({ error: "user exists" });
+
+  data.users.push({
+    username,
+    balance: 200
+  });
+
+  saveData(data);
+
   res.json({ ok: true });
 });
 
-// ---------------- REGISTER ----------------
-
-app.post("/register", async (req, res) => {
-  const { username, password } = req.body;
-
-  const hash = await bcrypt.hash(password, 10);
-
-  db.run(
-    "INSERT INTO users (username, password, balance) VALUES (?, ?, 0)",
-    [username, hash],
-    function (err) {
-      if (err) return res.json({ error: "Usuario ya existe" });
-      res.json({ success: true });
-    }
-  );
-});
-
-// ---------------- LOGIN ----------------
-
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-
-  db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
-    if (!user) return res.json({ error: "Usuario no existe" });
-
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.json({ error: "Contraseña incorrecta" });
-
-    res.json({ success: true, balance: user.balance });
-  });
-});
-
-// ---------------- BALANCE ----------------
-
-app.get("/balance/:user", (req, res) => {
-  db.get(
-    "SELECT balance FROM users WHERE username = ?",
-    [req.params.user],
-    (err, row) => {
-      res.json({ balance: row?.balance || 0 });
-    }
-  );
-});
-
-// ---------------- SEND ----------------
+/* ======================
+   ENVIAR DINERO
+====================== */
 
 app.post("/send", (req, res) => {
+  const data = loadData();
   const { from, to, amount } = req.body;
 
-  db.get("SELECT balance FROM users WHERE username = ?", [from], (err, sender) => {
-    if (!sender || sender.balance < amount) {
-      return res.json({ error: "Saldo insuficiente" });
-    }
+  const sender = data.users.find(u => u.username === from);
+  const receiver = data.users.find(u => u.username === to);
 
-    db.get("SELECT username FROM users WHERE username = ?", [to], (err, receiver) => {
-      if (!receiver) {
-        return res.json({ error: "Usuario destino no existe" });
-      }
+  if (!sender || !receiver) {
+    return res.json({ error: "user not found" });
+  }
 
-      db.run("UPDATE users SET balance = balance - ? WHERE username = ?", [amount, from]);
-      db.run("UPDATE users SET balance = balance + ? WHERE username = ?", [amount, to]);
+  if (sender.balance < amount) {
+    return res.json({ error: "not enough balance" });
+  }
 
-      db.run(
-        "INSERT INTO transactions (fromUser, toUser, amount, date) VALUES (?, ?, ?, datetime('now'))",
-        [from, to, amount]
-      );
+  sender.balance -= amount;
+  receiver.balance += amount;
 
-      res.json({ success: true });
-    });
+  data.transactions.push({
+    from,
+    to,
+    amount,
+    date: new Date().toISOString()
   });
+
+  saveData(data);
+
+  res.json({ ok: true });
 });
 
-// ---------------- HISTORY ----------------
+/* ======================
+   HISTORIAL
+====================== */
 
 app.get("/history", (req, res) => {
-  db.all("SELECT * FROM transactions ORDER BY id DESC", [], (err, rows) => {
-    if (err) {
-      console.log("ERROR HISTORY:", err);
-      return res.json([]);
-    }
-    res.json(rows || []);
-  });
+  const data = loadData();
+  res.json(data.transactions);
 });
 
-// ---------------- START ----------------
+/* ======================
+   USUARIOS
+====================== */
 
-app.listen(3000, () => {
-  console.log("🚀 http://localhost:3000");
+app.get("/users", (req, res) => {
+  const data = loadData();
+  res.json(data.users);
 });
 
-app.get("/history", (req, res) => {
-  console.log("📡 HISTORY HIT");
-  res.json([{ test: "ok" }]);
-});
+/* ======================
+   SERVIDOR
+====================== */
 
-app.get("/clear", (req, res) => {
-  db.run("DELETE FROM transactions", [], () => {
-    res.json({ ok: true });
-  });
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("🔥 PhiCoin running on port " + PORT);
 });
