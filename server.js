@@ -2,13 +2,14 @@ const express = require("express");
 const fs = require("fs");
 
 const app = express();
+
 app.use(express.json());
 app.use(express.static("public"));
 
 const DATA_FILE = "./data.json";
 
 /* ======================
-   DB HELPERS
+   DATA HELPERS
 ====================== */
 
 function loadData() {
@@ -25,7 +26,7 @@ function saveData(data) {
 }
 
 /* ======================
-   FRONTEND ROUTE
+   FRONT PAGE
 ====================== */
 
 app.get("/", (req, res) => {
@@ -33,7 +34,7 @@ app.get("/", (req, res) => {
 });
 
 /* ======================
-   REGISTER USER
+   REGISTER (TODOS 0€)
 ====================== */
 
 app.post("/register", (req, res) => {
@@ -48,7 +49,7 @@ app.post("/register", (req, res) => {
 
   data.users.push({
     username,
-    balance: 200
+    balance: 0
   });
 
   saveData(data);
@@ -106,6 +107,25 @@ app.get("/users", (req, res) => {
 app.get("/history", (req, res) => {
   const data = loadData();
   res.json(data.transactions);
+});
+
+/* ======================
+   ADMIN: GIVE MONEY
+====================== */
+
+app.post("/admin/add", (req, res) => {
+  const data = loadData();
+  const { username, amount } = req.body;
+
+  const user = data.users.find(u => u.username === username);
+
+  if (!user) return res.json({ error: "user not found" });
+
+  user.balance += Number(amount);
+
+  saveData(data);
+
+  res.json({ ok: true, balance: user.balance });
 });
 
 /* ======================
